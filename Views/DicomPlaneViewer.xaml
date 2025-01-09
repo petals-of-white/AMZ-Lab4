@@ -27,7 +27,7 @@
             Width="240"
             VerticalAlignment="Center"
             Orientation="Vertical">
-            <Label Content="{Binding DisplayedPlane}"/>
+            <Label Content="{Binding DisplayedPlane}" />
             <Label Content="Space" />
             <Slider
                 Maximum="{Binding NumberOfSpacePositions}"

@@ -1,7 +1,8 @@
 ﻿namespace Core
 
 
-module 
+module PerfusionAnalysis =
+
 //module Say =
 //    type T = private {Hello: string}
 //    let hello (name: T) =

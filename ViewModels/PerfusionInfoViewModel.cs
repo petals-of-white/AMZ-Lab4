@@ -12,8 +12,8 @@ public partial class PerfusionInfoViewModel : ObservableObject
     [ObservableProperty]
     private float baseline;
 
-    [ObservableProperty]
-    private IReadOnlyList<float> concentration = [];
+    //[ObservableProperty]
+    private (float time, float conc) [] concentration = [];
 
     [ObservableProperty]
     private float fwhm;
@@ -35,4 +35,13 @@ public partial class PerfusionInfoViewModel : ObservableObject
 
     [ObservableProperty]
     private float wor;
+
+    public IReadOnlyList<(float time, float conc)> Concentration
+    {
+        get => concentration; set
+        {
+            SetProperty(ref concentration, value.ToArray());
+            //SetProperty(ref )
+        }
+    }
 }
