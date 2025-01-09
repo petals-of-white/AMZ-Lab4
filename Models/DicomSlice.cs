@@ -1,49 +1,59 @@
-﻿using FellowOakDicom;
+﻿using System.Data;
+using FellowOakDicom;
 using FellowOakDicom.Imaging;
 
 namespace Models;
 
-public class DicomSlice
+public record class DicomSlice
 {
-    public BitDepth BitDepth => throw new NotImplementedException();
+    public required BitDepth BitDepth { get; init; }
 
-    public AnatomicPlane DefaultPlane => throw new NotImplementedException();
+    public required AnatomicPlane DefaultPlane { get; init; }
 
-    public float EchoTime => throw new NotImplementedException();
+    public required float EchoTime { get; init; }
 
-    public ushort Height => throw new NotImplementedException();
+    public required ushort Height { get; init; }
 
-    public ushort NumberOfTemporalPositions => throw new NotImplementedException();
-    public PhotometricInterpretation PhotometricInterpretation => throw new NotImplementedException();
-    public IReadOnlyList<byte> PixelData => throw new NotImplementedException();
-    public PixelRepresentation PixelRepresentation => throw new NotImplementedException();
-    public (double VerticalSpacing, double HorizontalSpacing) PixelSpacing => throw new NotImplementedException();
+    public required ushort NumberOfTemporalPositions { get; init; }
+    public required PhotometricInterpretation PhotometricInterpretation { get; init; }
+    public required IReadOnlyList<byte> PixelData { get; init; }
+    public required PixelRepresentation PixelRepresentation { get; init; }
+    public required (double VerticalSpacing, double HorizontalSpacing) PixelSpacing { get; init; }
+
     //public float SliceLocation { get; }
-    public ushort TemporalPosition { get; }
-    public uint TriggerTime { get; }
-    public ushort Width { get; }
-    public (float Window, float Level) WindowLevel => throw new NotImplementedException();
+    public required ushort TemporalPosition { get; init; }
+
+    public required uint TriggerTime { get; init; }
+    public required ushort Width { get; init; }
+    public required (float Window, float Level) WindowLevel { get; init; }
 
     public static DicomSlice FromDicomFile(DicomFile dicom)
     {
-        //var ds = dicom.Dataset;
-        //var pixData = DicomPixelData.Create(ds);
-        throw new NotImplementedException();
-        //pixelData = pixData;
-        //dataset = ds;
-        //bytes = new List<byte>(pixData.GetFrame(0).Data);
-        //Depth = 1;
-    }
-    
+        var pixData = DicomPixelData.Create(dicom.Dataset);
+        float echoTime = dicom.Dataset.GetSingleValue<float>(DicomTag.EchoTime);
+        ushort tempPosition = dicom.Dataset.GetSingleValue<ushort>(DicomTag.TemporalPositionIdentifier);
+        ushort numberoftemppositions = dicom.Dataset.GetSingleValue<ushort>(DicomTag.NumberOfTemporalPositions);
+        double [] spacing = dicom.Dataset.GetValues<double>(DicomTag.PixelSpacing);
+        (double vertspacing, double horzspacing) = (spacing [0], spacing [1]);
+        uint triggerTime = dicom.Dataset.GetSingleValue<uint>(DicomTag.TriggerTime);
+        float wl = dicom.Dataset.GetSingleValue<float>(DicomTag.WindowCenter);
+        float ww = dicom.Dataset.GetSingleValue<float>(DicomTag.WindowWidth);
 
-    public static IReadOnlyList<DicomSlice> FromFiles(string [] filepaths)
-    { throw new NotImplementedException(); 
-        // sort
+        return new DicomSlice
+        {
+            BitDepth = pixData.BitDepth,
+            PhotometricInterpretation = pixData.PhotometricInterpretation,
+            PixelRepresentation = pixData.PixelRepresentation,
+            DefaultPlane = AnatomicPlane.Axial,
+            Width = pixData.Width,
+            Height = pixData.Height,
+            PixelData = pixData.GetFrame(0).Data,
+            EchoTime = echoTime,
+            TemporalPosition = tempPosition,
+            NumberOfTemporalPositions = numberoftemppositions,
+            PixelSpacing = (vertspacing, horzspacing),
+            TriggerTime = triggerTime,
+            WindowLevel = (ww, wl)
+        };
     }
-
-    public static IReadOnlyList<DicomSlice> SortSlices(IEnumerable<DicomSlice> slices)
-    {
-        throw new NotImplementedException();
-    }
-
 }

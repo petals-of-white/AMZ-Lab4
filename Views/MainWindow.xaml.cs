@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+﻿using System.Windows;
+using Models;
+using OpenTK.Windowing.Common;
+using OpenTK.Wpf;
+using Views.Graphics;
+
 //using Vintasoft.Imaging.Dicom.Mpr.
 namespace Views
 {
@@ -23,6 +16,46 @@ namespace Views
         {
             //var kek = new Vintasoft.Imaging.Dicom.Mpr.Wpf.UI.VisualTools.
             InitializeComponent();
+
+            var settings = new GLWpfControlSettings()
+            {
+                MajorVersion = 4,
+                MinorVersion = 6,
+                ContextFlags = ContextFlags.Debug,
+                Profile = ContextProfile.Compatability
+            };
+
+            IGraphicsContext glContext = axialViewer.InitOpenGL(settings);
+
+            settings.ContextToUse = glContext;
+
+            sagittalViewer.InitOpenGL(settings);
+
+            coronalViewer.InitOpenGL(settings);
+
+            glContext.MakeCurrent();
+            DicomScene dicomScene = new();
+
+            axialViewer.LoadScene(dicomScene);
+            sagittalViewer.LoadScene(dicomScene);
+            coronalViewer.LoadScene(dicomScene);
+        }
+
+        private void openDICOMbtn_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog() { Multiselect = true };
+            if (dialog.ShowDialog() == true)
+            {
+                string [] files = dialog.FileNames;
+                var dicomData = DicomSeries.FromFiles(files);
+                axialViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Axial };
+                sagittalViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Sagittal };
+                coronalViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Coronal };
+
+                //SecondSliceViewModel = new(new System.Drawing.PointF(), new RectangleROIDicomDataHistogram(dicomData, 0));
+                //axialViewer.ViewModel.SetDicomCommand.Execute(dicomData);
+                //axialViewer.ViewModel.ROIViewModel!.PropertyChanged += ROIViewModel_PropertyChanged;
+            }
         }
     }
 }

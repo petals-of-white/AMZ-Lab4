@@ -7,7 +7,19 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="MainWindows"
     Width="800"
-    Height="450"
+    Height="800"
     mc:Ignorable="d">
-    <Grid />
+    <StackPanel Orientation="Vertical">
+        <StackPanel Orientation="Horizontal">
+            <Button
+                x:Name="openDICOMbtn"
+                Click="openDICOMbtn_Click"
+                Content="Вибрати файли..." />
+            <!--<Button x:Name=""/>-->
+        </StackPanel>
+        <local:DicomPlaneViewer x:Name="axialViewer" />
+        <local:DicomPlaneViewer x:Name="coronalViewer" />
+        <local:DicomPlaneViewer x:Name="sagittalViewer" />
+
+    </StackPanel>
 </Window>
