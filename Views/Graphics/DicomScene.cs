@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Diagnostics;
-using System.IO;
+﻿using System.IO;
 using System.Numerics;
 using Models;
 using OpenTK.Graphics.OpenGL;
@@ -28,7 +26,6 @@ public class DicomScene : IDisposable
     private uint vao;
     private uint vbo;
     private int vertShader, fragShader, program;
-    //private CoordsPixelLength? volumePixSize;
 
     public DicomScene()
     {
@@ -36,13 +33,13 @@ public class DicomScene : IDisposable
 
         CreateVertices();
         CreateProgram();
-        //CreateTexture();
-
         UnbindAll();
     }
 
     public static string FragShaderLoc { get; } = "Shaders/shader.frag";
+
     public static string VertShaderLoc { get; } = "Shaders/shader.vert";
+
     public bool IsTextureLoaded { get; private set; } = false;
 
     public static Matrix4 ToOpenTKMatrix(Matrix4x4 matrix) => new(
@@ -76,27 +73,6 @@ public class DicomScene : IDisposable
         {
             float relativeDepth = (float) spaceLocation / coordsPixelLength.ZPixels;
 
-            //switch (targetPlane)
-            //{
-            //    case (AnatomicPlane.Axial):
-
-            //        relativeDepth = (float) spaceLocation / coordsPixelLength.ZPixels;
-            //        break;
-
-            //    case (AnatomicPlane.Sagittal):
-            //        relativeDepth = (float) spaceLocation / coordsPixelLength.XPixels;
-            //        break;
-
-            //    case (AnatomicPlane.Coronal):
-            //        relativeDepth = (float) spaceLocation / coordsPixelLength.YPixels;
-            //        break;
-
-            //    default:
-            //        throw new NotImplementedException("Dicom HUH");
-            //}
-
-            //Matrix4x4 addDepth = AnatomicPlaneRelations.AddDepth((AnatomicPlane) sourcePlane!, targetPlane, relativeDepth);
-
             // Bind All
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
@@ -115,7 +91,6 @@ public class DicomScene : IDisposable
             ThrowIfGLError();
 
             ApplyNormalization(0f, 600);
-            //ApplyWindowLevel(900, 500);
 
             //Draw vertices
 
@@ -130,11 +105,35 @@ public class DicomScene : IDisposable
         }
     }
 
+    public (float time, float value) [] GetIntensities(System.Drawing.Point pixelPos, AnatomicPlane plane, uint spaceLocation)
+    {
+        List<float> intensities = new();
+        foreach (var texture in textures)
+        {
+            GL.BindTexture(TextureTarget.Texture3D, texture);
+            int width = 1, height = 1, depth = 1;
+            var pixSize = sizeof(ushort);
+
+            var bufSize = width * height * depth * pixSize;
+
+            ushort pixelAtCoords = 0;
+
+            // ONLY WORKS FOR AXIAL PLANE FOR NOW
+            GL.GetTextureSubImage(texture, 0, pixelPos.X, pixelPos.Y, (int) spaceLocation, width, height, depth, dicomGLData!.Format, dicomGLData.Type, 10, ref pixelAtCoords);
+            intensities.Add(pixelAtCoords);
+        }
+        return lastLoadedSeries!.Slices
+                .Take((int) lastLoadedSeries.NumberOfTemporalPositions)
+                .Select(sl => (float) sl.TriggerTime)
+                .Zip(intensities).ToArray();
+    }
+
     public void LoadDicomSeries(DicomSeries dicomSeries)
     {
         if (dicomSeries != lastLoadedSeries)
         {
             var converter = new DicomToGLConverter(dicomSeries);
+            dicomGLData = converter;
             var tempPositions = dicomSeries.Slices [0].NumberOfTemporalPositions;
 
             //volumePixSize = new CoordsPixelLength(dicomSeries);
@@ -164,7 +163,6 @@ public class DicomScene : IDisposable
             IsTextureLoaded = true;
         }
     }
-
 
     public void UnbindAll()
     {
@@ -217,32 +215,6 @@ public class DicomScene : IDisposable
         GL.BindTexture(TextureTarget.Texture3D, texture3D);
     }
 
-    private void CheckTexture()
-    {
-        short [] texture = new short [dicomGLData!.Width * dicomGLData.Height * dicomGLData.Depth];
-
-        int internalFormat;
-        int texWidth, texHeight, texDepth;
-
-        GL.GetTexLevelParameter(TextureTarget.Texture3D, 0, GetTextureParameter.TextureInternalFormat, out internalFormat);
-        GL.GetTexLevelParameter(TextureTarget.Texture3D, 0, GetTextureParameter.TextureWidth, out texWidth);
-        GL.GetTexLevelParameter(TextureTarget.Texture3D, 0, GetTextureParameter.TextureHeight, out texHeight);
-        GL.GetTexLevelParameter(TextureTarget.Texture3D, 0, GetTextureParameter.TextureDepth, out texDepth);
-
-        if ((PixelInternalFormat) internalFormat != dicomGLData!.InternalFormat
-            || texWidth != dicomGLData!.Width
-            || texHeight != dicomGLData!.Height
-            || texDepth != dicomGLData!.Depth)
-        {
-            var message = $"Mismatch! Expected: Width{dicomGLData.Width}, Height {dicomGLData.Height}, Depth{dicomGLData.Depth}," +
-                $"Internal format {dicomGLData.InternalFormat}. Got: width {texWidth}, height {texHeight}, depth {texDepth}, internal format {(PixelInternalFormat) internalFormat}";
-            Debug.WriteLine(message);
-            //throw new Exception(message);
-        }
-
-        GL.GetTexImage(TextureTarget.Texture3D, 0, PixelFormat.RedInteger, PixelType.Short, texture);
-    }
-
     private void CreateProgram()
     {
         vertShader = MakeShader(ShaderType.VertexShader, File.ReadAllText(VertShaderLoc));
@@ -255,42 +227,6 @@ public class DicomScene : IDisposable
         GL.ValidateProgram(program);
 
         // TODO: validate progam
-    }
-
-    private void CreateTexture()
-    {
-        uint [] textures = new uint [1];
-        GL.GenTextures(1, textures);
-        texture3D = textures [0];
-
-        GL.UseProgram(program);
-
-        GL.ActiveTexture(TextureUnit.Texture0);
-        GL.BindTexture(TextureTarget.Texture3D, texture3D);
-
-        ThrowIfGLError();
-
-        GL.TexParameter(TextureTarget.Texture3D, TextureParameterName.TextureWrapS, (int) wrapMode);
-        ThrowIfGLError();
-        GL.TexParameter(TextureTarget.Texture3D, TextureParameterName.TextureWrapT, (int) wrapMode);
-        ThrowIfGLError();
-        GL.TexParameter(TextureTarget.Texture3D, TextureParameterName.TextureWrapR, (int) wrapMode);
-        ThrowIfGLError();
-        GL.TexParameter(TextureTarget.Texture3D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
-        ThrowIfGLError();
-        GL.TexParameter(TextureTarget.Texture3D, TextureParameterName.TextureMagFilter, (int) TextureMinFilter.Nearest);
-
-        ThrowIfGLError();
-
-        var texUniLoc = GL.GetUniformLocation(program, "u_texture");
-        int sampler3d = 0;
-        GL.Uniform1(texUniLoc, sampler3d);
-
-        ThrowIfGLError();
-
-        // unbind all
-        GL.BindTexture(TextureTarget.Texture3D, 0);
-        GL.UseProgram(0);
     }
 
     private void CreateVertices()

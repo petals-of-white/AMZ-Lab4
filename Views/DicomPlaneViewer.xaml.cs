@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
-using Models;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Wpf;
@@ -17,14 +16,15 @@ namespace Views
     public partial class DicomPlaneViewer : UserControl
     {
         private DicomScene? glState;
-        //private DicomSeries? lastLoadedSeries;
-        //private PerfusionInfoViewModel? perfusionVM;
         private DicomViewModel? viewModel;
 
         public DicomPlaneViewer()
         {
             InitializeComponent();
+            PerfusionVM.PropertyChanged += PerfusionVM_PropertyChanged;
         }
+
+        public PerfusionInfoViewModel PerfusionVM => (PerfusionInfoViewModel) Resources ["perfusionVM"];
 
         public DicomViewModel? ViewModel
         {
@@ -42,7 +42,6 @@ namespace Views
                 viewModel = value;
 
                 glState?.LoadDicomSeries(viewModel!.Series);
-
             }
         }
 
@@ -66,6 +65,22 @@ namespace Views
             glState = dicomScene is null ? new() : dicomScene;
         }
 
+        private void openTkControl_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (ViewModel is not null && glState?.IsTextureLoaded == true)
+            {
+                var control = (GLWpfControl) sender;
+                var coords = e.GetPosition(control);
+                coords.Y = control.Height - coords.Y;
+
+                System.Drawing.Point intCoords = new((int) coords.X, (int) coords.Y);
+
+                ViewModel.SelectedPixel = intCoords;
+                var intensities = glState.GetIntensities(ViewModel.SelectedPixel, ViewModel.DisplayedPlane, ViewModel.CurrentSpaceSlice);
+                PerfusionVM.UpdateIntensities(intensities, ViewModel.Series.EchoTime);
+            }
+        }
+
         private void OpenTkControl_Render(TimeSpan obj)
         {
             openTkControl.Context?.MakeCurrent();
@@ -75,12 +90,29 @@ namespace Views
                 glState?.DrawVertices(viewModel.DisplayedPlane, viewModel.CurrentSpaceSlice, viewModel.CurrentTimeSlice);
         }
 
+        private void PerfusionVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PerfusionInfoViewModel.Concentration))
+            {
+                var vm = (PerfusionInfoViewModel) sender!;
+                var scottPlotPoints = vm.Concentration.Select(p =>
+                    new ScottPlot.Coordinates(p.time, p.conc)).ToList();
+
+                WpfPerfusionPlot.Plot.Clear();
+                WpfPerfusionPlot.Plot.Add.Scatter(scottPlotPoints);
+
+                WpfPerfusionPlot.Plot.YLabel("Концентрація", 20);
+                WpfPerfusionPlot.Plot.XLabel("Час, мс", 20);
+                WpfPerfusionPlot.Plot.Axes.AutoScale();
+                WpfPerfusionPlot.Refresh();
+            }
+        }
+
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(viewModel.Series))
             {
                 glState?.LoadDicomSeries(viewModel!.Series);
-                //lastLoadedSeries = viewModel.Series;
             }
         }
     }

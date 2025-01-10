@@ -4,9 +4,9 @@ namespace Models;
 
 public static class PerfusionAnalysis
 {
-    public static float Baseline((float value, float time) [] input)
+    public static float Baseline((float time, float value) [] input)
     {
-        return input.Take(5).Select(point => point.value).Average();
+        return input.Take(10).Select(point => point.value).Average();
     }
 
     public static float FWHM((float time, float value) [] input, (float time, float value) maxPE, float baseline)
@@ -45,6 +45,13 @@ public static class PerfusionAnalysis
         return right50 - left50;
     }
 
+    public static (float time, float conc) [] IntensityToConcentration((float time, float intensity) [] input, float baseline, float echotime)
+    {
+        float k = 1;
+        return input.Select(point =>
+        (point.time, -(k / echotime) * float.Log(point.intensity / baseline))).ToArray();
+    }
+
     public static (float time, float value) PE((float time, float value) [] input) =>
                 input.MaxBy(point => point.value);
 
@@ -70,40 +77,44 @@ public static class PerfusionAnalysis
             }
         }
 
-        throw new ArgumentException("t0 not found");
-        //input.Where(point => point.time == maxPE.time).Single()
+        return 0;
     }
 
     public static float TRec((float time, float value) [] input, int indexPE)
     {
-        //var indexPE = Array.FindIndex(input, point => point.time == maxPEtime);
         return input [indexPE + 3].time;
     }
 
     public static float TTP((float time, float value) maxPE) => maxPE.time;
 
-    public static float WiR((float time, float value) [] input, int indexT0, int indexPE)
+    public static float WiR((float time, float value) [] input, float t0, int indexPE)
     {
         float maxAngle = 0;
-        for (var i = indexT0; i < indexPE; i++)
+        for (var i = 0; i < indexPE; i++)
         {
-            var tanTheta = (input [i + 1].value - input [i].value) / (input [i + 1].time - input [i].time);
-            float currentAngle = float.Atan(tanTheta);
+            if (input [i].time > t0)
+            {
+                var tanTheta = (input [i + 1].value - input [i].value) / (input [i + 1].time - input [i].time);
+                float currentAngle = float.Atan(tanTheta);
 
-            maxAngle = float.Max(Math.Abs(currentAngle), maxAngle);
+                maxAngle = float.Max(Math.Abs(currentAngle), maxAngle);
+            }
         }
         return maxAngle;
     }
 
-    public static float WoR((float time, float value) [] input, int indexTrec, int indexPE)
+    public static float WoR((float time, float value) [] input, float tRec, int indexPE)
     {
         float maxAngle = 0;
-        for (var i = indexPE; i < indexTrec; i++)
+        for (var i = indexPE; i < input.Length - 1; i++)
         {
-            var tanTheta = (input [i + 1].value - input [i].value) / (input [i + 1].time - input [i].time);
-            float currentAngle = float.Atan(tanTheta);
+            if (input [i].time < tRec)
+            {
+                var tanTheta = (input [i + 1].value - input [i].value) / (input [i + 1].time - input [i].time);
+                float currentAngle = float.Atan(tanTheta);
 
-            maxAngle = float.Max(Math.Abs(currentAngle), maxAngle);
+                maxAngle = float.Max(Math.Abs(currentAngle), maxAngle);
+            }
         }
         return maxAngle;
     }

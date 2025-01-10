@@ -2,6 +2,7 @@
     x:Class="Views.DicomPlaneViewer"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -22,20 +23,21 @@
             Height="{Binding Series.Height}"
             d:Height="256"
             d:Width="256"
+            MouseLeftButtonUp="openTkControl_MouseLeftButtonUp"
             Render="OpenTkControl_Render" />
         <StackPanel
             Width="240"
             VerticalAlignment="Center"
             Orientation="Vertical">
             <Label Content="{Binding DisplayedPlane}" />
-            <Label Content="Space" />
+            <Label Content="{Binding CurrentSpaceSlice}" ContentStringFormat="Space position (depth) = {0}" />
             <Slider
                 Maximum="{Binding NumberOfSpacePositions}"
                 Minimum="1"
                 TickFrequency="1"
                 TickPlacement="BottomRight"
                 Value="{Binding CurrentSpaceSlice}" />
-            <Label Content="Time" />
+            <Label Content="{Binding CurrentTimeSlice}" ContentStringFormat="Time position = {0}" />
             <Slider
                 Maximum="{Binding NumberOfTemporalPositions}"
                 Minimum="1"
@@ -44,40 +46,38 @@
                 Value="{Binding CurrentTimeSlice}" />
         </StackPanel>
 
-        <StackPanel
-            d:DataContext="{d:DesignInstance Type=viewmodel:PerfusionInfoViewModel}"
-            DataContext="{Binding Source={StaticResource perfusionVM}}"
-            Orientation="Vertical">
-            <Rectangle
-                Width="300"
-                Height="200"
-                Fill="Blue" />
-            <TextBlock>
-                <Run Text="{Binding Tta, StringFormat='TTA: {0}'}" />
-                <LineBreak />
+        <!--<StackPanel DataContext="{Binding Source={StaticResource perfusionVM}}" Orientation="Vertical">-->
+        <ScottPlot:WpfPlot
+            x:Name="WpfPerfusionPlot"
+            Width="250"
+            Height="250"
+            DataContext="{StaticResource perfusionVM}" />
+        <TextBlock DataContext="{Binding Source={StaticResource perfusionVM}}">
+            <Run DataContext="{Binding ElementName=openTkControl, Path=DataContext}" Text="{Binding SelectedPixel, StringFormat='Графік для вокселя з координатами: {0}'}" />
+            <LineBreak />
+            <Run Text="{Binding Tta, StringFormat='TTA: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Baseline, StringFormat='Baseline: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding Baseline, StringFormat='Baseline: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Pe, StringFormat='PE: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding Pe, StringFormat='PE: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Ttp, StringFormat='TTP: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding Ttp, StringFormat='TTP: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding RTtp, StringFormat='rTTP: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding RTtp, StringFormat='rTTP: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Fwhm, StringFormat='FWHM: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding Fwhm, StringFormat='FWHM: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Wir, StringFormat='WiR: {0}'}" />
-                <LineBreak />
+            <Run Text="{Binding Wir, StringFormat='WiR: {0}'}" />
+            <LineBreak />
 
-                <Run Text="{Binding Wor, StringFormat='WOR: {0}'}" />
-
-            </TextBlock>
-        </StackPanel>
-
+            <Run Text="{Binding Wor, StringFormat='WOR: {0}'}" />
+        </TextBlock>
+        <!--</StackPanel>-->
     </StackPanel>
 </UserControl>

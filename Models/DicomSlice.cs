@@ -1,5 +1,4 @@
-﻿using System.Data;
-using FellowOakDicom;
+﻿using FellowOakDicom;
 using FellowOakDicom.Imaging;
 
 namespace Models;
@@ -10,7 +9,7 @@ public record class DicomSlice
 
     public required AnatomicPlane DefaultPlane { get; init; }
 
-    public required float EchoTime { get; init; }
+    public required uint EchoTime { get; init; }
 
     public required ushort Height { get; init; }
 
@@ -19,8 +18,6 @@ public record class DicomSlice
     public required IReadOnlyList<byte> PixelData { get; init; }
     public required PixelRepresentation PixelRepresentation { get; init; }
     public required (double VerticalSpacing, double HorizontalSpacing) PixelSpacing { get; init; }
-
-    //public float SliceLocation { get; }
     public required ushort TemporalPosition { get; init; }
 
     public required uint TriggerTime { get; init; }
@@ -30,7 +27,7 @@ public record class DicomSlice
     public static DicomSlice FromDicomFile(DicomFile dicom)
     {
         var pixData = DicomPixelData.Create(dicom.Dataset);
-        float echoTime = dicom.Dataset.GetSingleValue<float>(DicomTag.EchoTime);
+        uint echoTime = dicom.Dataset.GetSingleValue<uint>(DicomTag.EchoTime);
         ushort tempPosition = dicom.Dataset.GetSingleValue<ushort>(DicomTag.TemporalPositionIdentifier);
         ushort numberoftemppositions = dicom.Dataset.GetSingleValue<ushort>(DicomTag.NumberOfTemporalPositions);
         double [] spacing = dicom.Dataset.GetValues<double>(DicomTag.PixelSpacing);

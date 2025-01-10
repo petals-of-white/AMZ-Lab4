@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Drawing;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Models;
 
 namespace ViewModels;
@@ -15,6 +16,9 @@ public partial class DicomViewModel : ObservableObject
     private AnatomicPlane displayedPlane;
 
     [ObservableProperty]
+    private Point selectedPixel;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NumberOfSpacePositions), nameof(NumberOfTemporalPositions))]
     private DicomSeries series;
 
@@ -29,7 +33,6 @@ public partial class DicomViewModel : ObservableObject
         {
             if (value < NumberOfSpacePositions)
             {
-                //currentSpaceSlice = value;
                 SetProperty(ref currentSpaceSlice, value);
             }
         }
@@ -49,9 +52,5 @@ public partial class DicomViewModel : ObservableObject
     public int NumberOfSpacePositions => (int) CoordsPixelLength.ZPixels;
 
     public int NumberOfTemporalPositions => (int) Series.NumberOfTemporalPositions;
-    private CoordsPixelLength CoordsPixelLength => new(Series,DisplayedPlane);
-    //[ObservableProperty]
-    //private int numberOfTemporalPositions;
-    //public int Width => series.
-    //public int Height { get; set; }
+    private CoordsPixelLength CoordsPixelLength => new(Series, DisplayedPlane);
 }

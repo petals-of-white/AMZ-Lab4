@@ -21,6 +21,7 @@ public class DicomSeries
                 PixelRepresentation = first.PixelRepresentation;
                 PhotometricInterpretation = first.PhotometricInterpretation;
                 BitDepth = first.BitDepth;
+                EchoTime = first.EchoTime;
                 NumberOfTemporalPositions = first.NumberOfTemporalPositions;
                 NumberOfSpacePositions = (uint) slices.Count / first.NumberOfTemporalPositions;
                 break;
@@ -31,6 +32,7 @@ public class DicomSeries
     }
 
     public BitDepth BitDepth { get; }
+    public uint EchoTime { get; }
     public uint Height { get; }
     public uint NumberOfSpacePositions { get; }
     public uint NumberOfTemporalPositions { get; }
@@ -38,6 +40,7 @@ public class DicomSeries
     public PixelRepresentation PixelRepresentation { get; }
 
     public AnatomicPlane Plane { get; }
+
     public IReadOnlyList<DicomSlice> Slices { get; }
     public uint Width { get; }
 

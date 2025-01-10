@@ -4,7 +4,6 @@ using OpenTK.Windowing.Common;
 using OpenTK.Wpf;
 using Views.Graphics;
 
-//using Vintasoft.Imaging.Dicom.Mpr.
 namespace Views
 {
     /// <summary>
@@ -14,7 +13,6 @@ namespace Views
     {
         public MainWindow()
         {
-            //var kek = new Vintasoft.Imaging.Dicom.Mpr.Wpf.UI.VisualTools.
             InitializeComponent();
 
             var settings = new GLWpfControlSettings()
@@ -51,10 +49,6 @@ namespace Views
                 axialViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Axial };
                 sagittalViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Sagittal };
                 coronalViewer.ViewModel = new ViewModels.DicomViewModel(dicomData) { DisplayedPlane = AnatomicPlane.Coronal };
-
-                //SecondSliceViewModel = new(new System.Drawing.PointF(), new RectangleROIDicomDataHistogram(dicomData, 0));
-                //axialViewer.ViewModel.SetDicomCommand.Execute(dicomData);
-                //axialViewer.ViewModel.ROIViewModel!.PropertyChanged += ROIViewModel_PropertyChanged;
             }
         }
     }
